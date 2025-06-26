@@ -1,0 +1,80 @@
+services:
+  configurator:
+    environment:
+      REDIS_CACHE: redis-cache:6379
+      REDIS_QUEUE: redis-queue:6379
+      REDIS_SOCKETIO: redis-socketio:6379
+    depends_on:
+      - redis-cache
+      - redis-queue
+      - redis-socketio
+
+  redis-cache:
+    image: redis:6.2-alpine
+    restart: unless-stopped
+
+  redis-queue:
+    image: redis:6.2-alpine
+    restart: unless-stopped
+    volumes:
+      - redis-queue-data:/data
+
+  redis-socketio:
+    image: redis:6.2-alpine
+    restart: unless-stopped
+
+  db:
+    image: mariadb:10.6
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=localdbpassword
+    volumes:
+      - mariadb-data:/var/lib/mysql
+
+  websocket:
+    command: ["bash", "-c", "cd /home/frappe/frappe-bench && node apps/frappe/socketio.js"]
+    environment:
+      - REDIS_CACHE=redis://redis-cache:6379
+      - REDIS_QUEUE=redis://redis-queue:6379
+      - REDIS_SOCKETIO=redis://redis-socketio:6379
+    ports:
+      - "9000:9000"
+
+  backend:
+    environment:
+      - REDIS_CACHE=redis://redis-cache:6379
+      - REDIS_QUEUE=redis://redis-queue:6379
+      - REDIS_SOCKETIO=redis://redis-socketio:6379
+    ports:
+      - "8000:8000"
+
+  queue-short:
+    environment:
+      - REDIS_CACHE=redis://redis-cache:6379
+      - REDIS_QUEUE=redis://redis-queue:6379
+      - REDIS_SOCKETIO=redis://redis-socketio:6379
+
+  queue-long:
+    environment:
+      - REDIS_CACHE=redis://redis-cache:6379
+      - REDIS_QUEUE=redis://redis-queue:6379
+      - REDIS_SOCKETIO=redis://redis-socketio:6379
+
+  scheduler:
+    environment:
+      - REDIS_CACHE=redis://redis-cache:6379
+      - REDIS_QUEUE=redis://redis-queue:6379
+      - REDIS_SOCKETIO=redis://redis-socketio:6379
+
+  frontend:
+    environment:
+      - BACKEND=backend:8000
+      - SOCKETIO=websocket:9000
+    ports:
+      - "8080:8080"
+
+volumes:
+  redis-queue-data:
+  redis-cache-data:
+  redis-socketio-data:
+  mariadb-data:
