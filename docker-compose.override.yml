@@ -8,6 +8,7 @@ services:
       - redis-cache
       - redis-queue
       - redis-socketio
+      - db
 
   redis-cache:
     image: redis:6.2-alpine
@@ -27,9 +28,12 @@ services:
     image: mariadb:10.6
     restart: unless-stopped
     environment:
-      - MYSQL_ROOT_PASSWORD=localdbpassword
+      - MYSQL_ROOT_PASSWORD=admin
     volumes:
       - mariadb-data:/var/lib/mysql
+      - ./my-custom.cnf:/etc/mysql/conf.d/my-custom.cnf:ro
+    ports:
+      - "3306:3306"
 
   websocket:
     command: ["bash", "-c", "cd /home/frappe/frappe-bench && node apps/frappe/socketio.js"]
@@ -45,6 +49,8 @@ services:
       - REDIS_CACHE=redis://redis-cache:6379
       - REDIS_QUEUE=redis://redis-queue:6379
       - REDIS_SOCKETIO=redis://redis-socketio:6379
+      - DB_HOST=db
+      - DB_PORT=3306
     ports:
       - "8000:8000"
 
